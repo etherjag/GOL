@@ -1,8 +1,10 @@
-# GOL
+# Game of Life!
 
 This project implements John Conway's famous Game Of Life using a recursive, quad-tree structure with memoized, canonical nodes to create cellular automata objects that are either alive or dead and evolve one generation forwared at a time (inspired by HashLife). The prompt given for this exercise was very open-ended, so I chose to try and implement an "infinite" game of life, meaning that given enough memory and processing power this game can continue beyond the initial 64 bit signed coordinates and have infinite quad-tree levels. I used the recursive quad-tree structure to achieve this along with a multi-precision library called GMP to store signed integers larged than the initial 64 bit signed range.
 
-I was not able to get around to actually drawing a board in OpenGL or other, so I use the console to display coordinates and if small enough, an ascii representation of the board is printed out
+To read about the data structures and optimizations implemented, scroll down to the Optimizations section.
+
+Note: I was not able to get around to actually drawing a board in OpenGL or other, so I use the console to display coordinates and if small enough, an ascii representation of the board is printed out
 
 ### Prerequisites
 * CLion 2017.1.1 to build and run the code
@@ -187,6 +189,8 @@ If we get beyond this level, we manually calculate the power of 2 to ensure infi
 * Simple garbage collection with 2 different modes
 * *.rle pattern reading supported
 * Multi-precision integers used for keeping track of population and calculating display coordinates
+* Pre-calculate multi precision powers of two to make display coordinate generation easier
+* Support infinite quad-tree expansion by using multi-precision coordinates and manually calculating level dimension once our table runs out.
 * Pre-process the input values and create a quad-tree at the average x, y value to minimize the number of levels we need to create. This, in particular, optimizes clusters of data that are away from the origin such as our signed 64 bit integer values. Testing out an edna pattern, this leads to a 2x speedup when placed at an int boundary as well as reducing the maximum number of nodes that get created:
 ```
 Edna WITH optimization
@@ -210,7 +214,6 @@ Edna WITHOUT optimization
 		SW Population: 0
 		SE Population: 0
 DONE: Processed test in 44347 milliseconds
-
 ```
 
 ### Improvements to be made:
