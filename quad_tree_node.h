@@ -32,6 +32,12 @@
  * http://golly.sourceforge.net/
  * http://conwaylife.com/
  */
+#if (ENABLE_INFINITE_LEVELS)
+typedef  mpz_class level_type;
+#else
+typedef  int level_type;
+#endif
+
 class QuadTreeNode {
 
     friend class QuadTree;
@@ -56,7 +62,7 @@ class QuadTreeNode {
          * @param level this level represents the power of 2 dimensions of this quad tree, which is square
          * @return a new empty quad tree at the specified level
          */
-        static QuadTreeNode* EmptyQuadTree(int level);
+        static QuadTreeNode* EmptyQuadTree(level_type level);
 
         /**
         * Copy Constructor
@@ -177,7 +183,7 @@ class QuadTreeNode {
          * @param node quad tree node
          * @return a new, canonical node
          */
-        static QuadTreeNode* Canonical(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, int level);
+        static QuadTreeNode* Canonical(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, level_type level);
 
         /**
          * This function looks up a leaf node in the hash table and returns a canonical one
@@ -203,7 +209,7 @@ class QuadTreeNode {
          * @param se southeast corner node
          * @param level current level this node represents (2^level is the side dimension of this square, which is NxN)
          */
-        QuadTreeNode(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, int level);
+        QuadTreeNode(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, level_type level);
 
         /**
          * Private Leaf node constructor (1x1 square, level 0, which is 2^0 x 2^0 in size)
@@ -318,9 +324,7 @@ class QuadTreeNode {
 
         // Level of this node, meaning this node is 2^level x 2^level in size, with coordinates
         // ranging from [-2^(n-1), 2^(n-1)-1]
-        // todo: for this quadtree to be truly infinite, level should be a multi-precision value, otherwise
-        // we are bounded at 4 byte, signed int as our max
-        int level;
+        level_type level;
 
     #if (ENABLE_BIG_INT)
         // population count of this node. We use a multiprecision integer because we can have a multiprecision boundary size

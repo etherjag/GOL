@@ -44,7 +44,7 @@ void QuadTreeNode::Shutdown() {
  * @param level this level represents the power of 2 dimensions of this quad tree, which is square
  * @return a new empty quad tree at the specified level
  */
-QuadTreeNode* QuadTreeNode::EmptyQuadTree(int level) {
+QuadTreeNode* QuadTreeNode::EmptyQuadTree(level_type level) {
     // if i'm a leaf, then return an interned node with alive set to false
     if (level == 0) {
         return Canonical(0);
@@ -116,7 +116,7 @@ QuadTreeNode* QuadTreeNode::Expand() {
 QuadTreeNode* QuadTreeNode::Compact() {
     QuadTreeNode* root = this;
     // pop off levels we dont need
-    int level = root->level;
+    level_type level = root->level;
     while (level >= 3) {
         QuadTreeNode *empty_tree = QuadTreeNode::EmptyQuadTree(level - 2);
         if (root->nw->nw == empty_tree && root->nw->ne == empty_tree && root->nw->sw == empty_tree
@@ -168,7 +168,11 @@ QuadTreeNode* QuadTreeNode::SetCellAlive(int64_t x, int64_t y) {
         // Return a level 0 alive cell
         return Canonical(1);
     }
+#if (ENABLE_INFINITE_LEVELS)
+    int64_t offset = (level == 1) ? 0 : INT64_C(1) << (level.get_si() - 2);
+#else
     int64_t offset = (level == 1) ? 0 : INT64_C(1) << (level - 2);
+#endif
     // Check west quadrants
     if (x < 0) {
         // Northwest
@@ -211,8 +215,22 @@ void QuadTreeNode::BuildDisplayList(mpz_class origin_x, mpz_class origin_y, std:
     } else {
         mpz_class offset = 0;
         if (level > 1) {
-            offset = mpz_pow2_table[level-2];
-            //offset <<= (level - 2);
+            if ((level - 2) < LEVEL_MAX) {
+                // we're still within signed int boundaries for level
+#if (ENABLE_INFINITE_LEVELS)
+                offset = mpz_pow2_table[level.get_si() - 2];
+#else
+                offset = mpz_pow2_table[level - 2];
+#endif
+            } else {
+                // God, this is slow, but we've run out of precalculated multi-precision powers of 2 because
+                // our level must be ginormous. We take care with boundaries here.
+                mpz_class max = (level - 2) - (LEVEL_MAX - 1);
+                mpz_class i = 0;
+                for (; i < max; ++i) {
+                    offset = offset * 2;
+                }
+            }
         }
         //std::cout << offset << std::endl;
         if (mpz_cmp_si(nw->population, 0) != 0) {
@@ -319,7 +337,7 @@ void QuadTreeNode::BuildDisplayList(int64_t origin_x, int64_t origin_y, std::vec
  * @param node quad tree node
  * @return a new, canonical node
  */
-QuadTreeNode* QuadTreeNode::Canonical(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, int level) {
+QuadTreeNode* QuadTreeNode::Canonical(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, level_type level) {
     // Create a node on the stack to look up the canonical version
     QuadTreeNode node(nw, ne, sw, se, level);
     // Return a pointer to the canonical version
@@ -368,7 +386,7 @@ QuadTreeNode* QuadTreeNode::Canonical(int alive) {
  * @param se southeast corner node
  * @param level current level this node represents (2^level is the side dimension of this square, which is NxN)
  */
-QuadTreeNode::QuadTreeNode(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, int level) {
+QuadTreeNode::QuadTreeNode(QuadTreeNode* nw, QuadTreeNode* ne, QuadTreeNode* sw, QuadTreeNode* se, level_type level) {
     this->nw = nw;
     this->ne = ne;
     this->sw = sw;
@@ -575,7 +593,6 @@ int QuadTreeNode::RunRule(int alive, int count) {
 void QuadTreeNode::InitializePow2Table() {
     mpz_pow2_table[0] = 1;
     for(int i = 1; i < LEVEL_MAX; i++) {
-
         mpz_pow2_table[i] = mpz_pow2_table[i-1] * 2;
     }
 }

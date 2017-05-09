@@ -10,7 +10,14 @@
  * If this is turned off, we can run just fine unless we have nodes at boundaries, in which the coordinates will wrap
  * in an odd way (we haven't accounted for a bounded space with this off!)
  */
-#define ENABLE_BIG_INT                          1   // enable/disable use of big integers
+#define ENABLE_BIG_INT                          1   // enable/disable use of big integers. probably don't turn this off now..
+
+/**
+ * This define turns on supporting infinite levels. With this off, we support up to an int value of levels (which is 2^n in size)
+ * but with multi-precision on and this, we store the level as a multi-precision value. We precalculate values of two up to LEVEL_MAX
+ * levels, and after that, we manually do it.
+ */
+#define ENABLE_INFINITE_LEVELS                  0&&ENABLE_BIG_INT   // enable infinite levels, which stores the current level as a multi-precision value
 
 /**
  * Enable/Disable garbage collection, of which there are currently two modes:
@@ -62,7 +69,7 @@
 #define ENABLE_DEBUG_PRINT                      0     // enable/disable debug printing (this will drastically slow everything down
 
 #if (ENABLE_BIG_INT)
- #define LEVEL_MAX 68
+ #define LEVEL_MAX                              256    // number of levels to calculate to determine bigint coordinates, in powers of 2
 #endif
 
 #endif //GOL_QUADTREECONFIG_H

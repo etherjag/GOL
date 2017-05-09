@@ -362,7 +362,12 @@ void QuadTree::SetCellAlive(int64_t x, int64_t y) {
         // Calculate the minimum and maximum signed 64-bit integer for this level
         //  min will be -2^(n-1)
         //  max will be 2^(n-1) - 1
+#if (ENABLE_INFINITE_LEVELS)
+        // we're still within signed integer range because we are bounded by 64 bit signed integer (level 63)
+        int shift = root->level.get_si() - 1;
+#else
         int shift = root->level - 1;
+#endif
         int64_t min = (root->level == 0) ? 0 : -(INT64_C(1) << shift);
         int64_t max = (root->level == 0) ? 0 : (INT64_C(1) << shift) - 1;
 
@@ -419,6 +424,7 @@ void QuadTree::CenterQuadTreeInput(std::vector<std::pair<int64_t, int64_t>> inpu
         SetCellAlive(pair.first, pair.second);
     }
 
+#if (ENABLE_BIG_INT)
     // finally, process our origin coordinates to be multiprecision, taking
     // special care with negative values because of the mpz_import function
     if (new_origin_x > 0) {
@@ -439,5 +445,9 @@ void QuadTree::CenterQuadTreeInput(std::vector<std::pair<int64_t, int64_t>> inpu
         mpz_import(origin_y.get_mpz_t(), 1, 1, sizeof(pos_origin_y), 0, 0, &pos_origin_y);
         origin_y = -origin_y;
     }
+#else
+    origin_x = new_origin_x;
+    origin_y = new_origin_y;
+#endif
 }
 #endif
