@@ -13,6 +13,7 @@
 #define ENABLE_BIG_INT                          1          // enable/disable use of big integers
 #define ENABLE_GARBAGE_COLLECTION               1          // enable/disable garbage collection of nodes
 #define DEBUG_RENDER_SIZE_MAX                   256        // Largest board size we can render to the console
+#define DEBUG_PRINT_NODES_MAX                   1024       // Max number of nodes whose display coordinates we print
 
 /**
  * Two garbage collection modes exist.
@@ -32,7 +33,7 @@
  * Params for garbage collection modes
  */
 #if (GARBAGE_COLLECTION_MODE_GENERATIONS)
-#define GARBAGE_COLLECTION_GENERATIONS_COUNT    5000      // number of generations to collect garbage
+#define GARBAGE_COLLECTION_GENERATIONS_COUNT    1000      // number of generations to collect garbage
 #elif (GARBAGE_COLLECTION_MODE_NODES)
 #define GARBAGE_COLLECTION_NODES_COUNT          100000    // number of nodes threshold to collect garbage
 #endif

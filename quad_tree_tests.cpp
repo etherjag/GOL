@@ -3,6 +3,7 @@
 //
 #include <vector>
 #include <fstream>
+#include <random>
 #include "quad_tree_tests.h"
 #include "quad_tree.h"
 
@@ -13,35 +14,45 @@
  * @param origin_x
  * @param origin_y
  */
-void QuadTreeTests::RunRLEPatternTest(const char* pattern_file_name, int num_generations, int64_t origin_x, int64_t origin_y) {
-    std::cout << "============================================================\n";
+void QuadTreeTests::RunRLEPatternTest(const char* pattern_file_name, int num_generations, int64_t origin_x, int64_t origin_y, bool draw_result) {
+    std::cout << "======================================================================================\n";
     std::cout << "Running Pattern Test: " << pattern_file_name << " " << "Generations: " << num_generations << " Location: (" << origin_x << ", " << origin_y << ")" << std::endl;
-    std::cout << "============================================================\n";
+    std::cout << "======================================================================================\n";
 
+    std::cout << "Reading in RLE pattern ..\n";
     std::vector<std::pair<int64_t, int64_t>> pattern_coords = ReadRLEPattern(pattern_file_name, origin_x, origin_y);
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
     if (pattern_coords.size() > 0) {
         // Initialize the quad tree
         QuadTree quad_tree;
+        std::cout << "Initializing quad tree with cells..\n";
         quad_tree.SetCellsAlive(pattern_coords);
 
         // Run the test
+        std::cout << "Evolving for " << num_generations << " generations..\n";
         for (int x = 0; x < num_generations; ++x) {
             quad_tree.Step();
         }
 
-        // Ended, print out some stuff!
-        quad_tree.Print();
+        // print statistics
+        quad_tree.PrintStats();
 
+        // Ended, print out some stuff!
+        if (draw_result) {
+            std::cout << "Building display list...\n";
+            std::chrono::high_resolution_clock::time_point display1 = std::chrono::high_resolution_clock::now();
+            quad_tree.PrintDisplayCoordinates();
+            std::chrono::high_resolution_clock::time_point display2 = std::chrono::high_resolution_clock::now();
+            auto display_duration = std::chrono::duration_cast<std::chrono::milliseconds>(display2 - display1).count();
+            std::cout << "Processed and printed display list in " << display_duration << " milliseconds" << std::endl;
+        }
     } else {
         std::cout << "Unable to load pattern: " << pattern_file_name << std::endl;
     }
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
-    std::cout << "============================================================\n";
-    std::cout << "Processed test in " << duration << " milliseconds" << std::endl;
-    std::cout << "============================================================\n\n";
+    std::cout << "DONE: Processed test in " << duration << " milliseconds" << std::endl << std::endl;
 }
 
 /**
@@ -116,4 +127,60 @@ std::vector<std::pair<int64_t, int64_t>> QuadTreeTests::ReadRLEPattern(const cha
     input.close();
 
     return pattern_coords;
+}
+
+
+/**
+ * This test function doesn't work well as random cells often just die in the next generation and the field is too large
+ * @param num_nodes
+ * @param num_generations
+ */
+void QuadTreeTests::RunMegaRandomMaxBoundariesTest(int64_t num_nodes, int64_t num_generations, int64_t min_x, int64_t max_x, int64_t min_y, int64_t max_y, bool draw_result) {
+    std::cout << "======================================================================================\n";
+    std::cout << "Running MegaRandomMaxBoundariesTest -> Random Nodes: " << num_nodes << " Generations: " << num_generations << std::endl;
+    std::cout << "======================================================================================\n";
+
+    std::cout << "Initializing with random nodes..\n";
+
+    // Apparently this is how we do random signed 64 bit integers?
+    std::vector<std::pair<int64_t, int64_t>> pattern_coords;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int64_t> gen_random_x(min_x, max_x);
+    std::uniform_int_distribution<int64_t> gen_random_y(min_y, max_y);
+
+    for (int64_t i = 0; i < num_nodes; ++i) {
+        pattern_coords.push_back(std::make_pair(gen_random_x(gen), gen_random_y(gen)));
+    }
+
+    std::cout << "Initializing quad tree with generated nodes..\n";
+    // Initialize the quad tree
+    QuadTree quad_tree;
+    quad_tree.SetCellsAlive(pattern_coords);
+
+    // Run the test
+    std::cout << "Evolving for " << num_generations << " generations..\n";
+    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+    for (int x = 0; x < num_generations; ++x) {
+        quad_tree.Step();
+    }
+    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>( t2 - t1 ).count();
+    std::cout << "Processed generations in " << duration << " milliseconds" << std::endl;
+
+    // print statistics
+    quad_tree.PrintStats();
+
+    // Ended, print out some stuff!
+    if (draw_result) {
+        std::cout << "Building display list...\n";
+        std::chrono::high_resolution_clock::time_point display1 = std::chrono::high_resolution_clock::now();
+        quad_tree.PrintDisplayCoordinates();
+        std::chrono::high_resolution_clock::time_point display2 = std::chrono::high_resolution_clock::now();
+        auto display_duration = std::chrono::duration_cast<std::chrono::milliseconds>(display2 - display1).count();
+        std::cout << "DONE: Processed and printed display list in " << display_duration << " milliseconds" << std::endl << std::endl;
+    } else {
+        std::cout << "DONE." << std::endl << std::endl;
+    }
 }

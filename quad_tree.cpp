@@ -97,20 +97,32 @@ void QuadTree::Step() {
 }
 
 /**
+ * Print some debug information, and if the board is small enough we print
+ * it out to the console with empty cells as "_", and alive cells as "*"
+ */
+void QuadTree::PrintVerbose() {
+    // print out some statistics
+    PrintStats();
+    // Print our display coordinates or render out a tiny display if our nodes are constrained small enough
+    PrintDisplayCoordinates();
+}
+
+
+
+/**
  * Print run stats, including memory usage and memory
  */
 void QuadTree::PrintStats() {
     size_t total_mem = (sizeof(QuadTreeNode) * QuadTreeNode::node_map.size())/1024;  // convert to kilobytes
-    std::cout << "============================================================\n";
-    std::cout << "Generation (" << num_generations << ") Population (" << root->population << ")" << " Tree Level (" << root->level << ")" << std::endl;
-    std::cout << "============================================================\n";
-    std::cout << "Current # nodes: " << QuadTreeNode::node_map.size() << std::endl;
-    std::cout << "Current Heap memory usage: " << total_mem << " KB" << std::endl;
-    std::cout << "All Time # nodes: " << QuadTreeNode::num_nodes_created << std::endl;
-    std::cout << "NW Population: " << root->nw->population << std::endl;
-    std::cout << "NE Population: " << root->ne->population << std::endl;
-    std::cout << "SW Population: " << root->sw->population << std::endl;
-    std::cout << "SE Population: " << root->se->population << std::endl;
+    std::cout << "Generating stats..\n";
+    std::cout << "\tOverview: Generation (" << num_generations << ") Population (" << root->population << ")" << " Tree Level (" << root->level << ")" << std::endl;
+    std::cout << "\t\tCurrent # nodes: " << QuadTreeNode::node_map.size() << std::endl;
+    std::cout << "\t\tCurrent Heap memory usage: " << total_mem << " KB" << std::endl;
+    std::cout << "\t\tAll Time # nodes: " << QuadTreeNode::num_nodes_created << std::endl;
+    std::cout << "\t\tNW Population: " << root->nw->population << std::endl;
+    std::cout << "\t\tNE Population: " << root->ne->population << std::endl;
+    std::cout << "\t\tSW Population: " << root->sw->population << std::endl;
+    std::cout << "\t\tSE Population: " << root->se->population << std::endl;
 }
 
 /**
@@ -119,6 +131,7 @@ void QuadTree::PrintStats() {
 void QuadTree::PrintDisplayCoordinates() {
 
 #if (ENABLE_BIG_INT)
+    std::cout << "Generating Display List..\n";
     // Create our display list, starting from our origin coordinates
     std::vector<std::pair<mpz_class, mpz_class>> display_list;
     root->BuildDisplayList(origin_x, origin_y, display_list);
@@ -154,9 +167,7 @@ void QuadTree::PrintDisplayCoordinates() {
         display_map[pair] = true;
     }
     // Print out a small render of the board, or if its too large, print out display coordinates so we can verify
-    std::cout << "============================================================\n";
-    std::cout << "Drawing Boundaries min(" << min_x << ", " << min_y  << ") max(" << max_x << ", " << max_y << ")" << std::endl;
-    std::cout << "============================================================\n";
+    std::cout << "Drawing Boundaries min(" << min_x << ", " << min_y  << ") max(" << max_x << ", " << max_y << ").." << std::endl;
     int display_list_index = 0;
     // Are we small enough to render out to the console?
     if ((max_x - min_x < DEBUG_RENDER_SIZE_MAX) && (max_y - min_y < DEBUG_RENDER_SIZE_MAX)) {
@@ -196,8 +207,14 @@ void QuadTree::PrintDisplayCoordinates() {
 
         // Render size would be too large, so lets just display a list of coordinates
         // Let's go through our display list, record min and max coordinates, and add to our map for fast access
+        int64_t max = 0;
         for(std::pair<mpz_class, mpz_class> pair : display_list) {
-           std::cout << "(" << pair.first << ", " << pair.second << ") ";
+            if (max > DEBUG_PRINT_NODES_MAX) {
+                std::cout << "\n ... and " << display_list.size() - DEBUG_PRINT_NODES_MAX << " more cells.\n";
+                break;
+            }
+            std::cout << "(" << pair.first << ", " << pair.second << ") ";
+            ++max;
         }
         std::cout << std::endl;
     }
@@ -255,18 +272,6 @@ void QuadTree::PrintDisplayCoordinates() {
     }
 #endif
 }
-
-/**
- * Print some debug information, and if the board is small enough we print
- * it out to the console with empty cells as "_", and alive cells as "*"
- */
-void QuadTree::Print() {
-    // print out some statistics
-    PrintStats();
-    // Print our display coordinates or render out a tiny display if our nodes are constrained small enough
-    PrintDisplayCoordinates();
-}
-
 
 /**
  * Print out the current hashtable, mainly for debugging

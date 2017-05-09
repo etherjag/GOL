@@ -69,7 +69,17 @@ class QuadTree {
          * Print some debug information, and if the board is small enough we print
          * it out to the console with empty cells as "_", and alive cells as "*"
          */
-        void Print();
+        void PrintVerbose();
+
+        /**
+         * Print run stats, including memory usage and memory
+         */
+        void PrintStats();
+
+        /**
+         * Print a list of display coordinates, or if the alive cells are tightly clustered, a console printout of the board
+         */
+        void PrintDisplayCoordinates();
 
     private:
 
@@ -136,16 +146,6 @@ class QuadTree {
          */
         void CollectGarbageHelper(std::unordered_map<QuadTreeNode *, QuadTreeNode *> &nodesInUse, QuadTreeNode *curr);
 #endif
-
-        /**
-         * Print run stats, including memory usage and memory
-         */
-        void PrintStats();
-
-        /**
-         * Print a list of display coordinates, or if the alive cells are tightly clustered, a console printout of the board
-         */
-        void PrintDisplayCoordinates();
 
     private:
         // The root note of our quad tree
