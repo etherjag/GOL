@@ -147,6 +147,16 @@ class QuadTree {
         void CollectGarbageHelper(std::unordered_map<QuadTreeNode *, QuadTreeNode *> &nodesInUse, QuadTreeNode *curr);
 #endif
 
+#if (ENABLE_QUADTREE_CENTER_ALIGN)
+        /**
+         * This is an optimization to calculate an x, y origin that exists in the center of the input cluster
+         * This is an optimization if input is clustered away from the origin, say at our 64 bit signed integer
+         * boundaries or otherwise so that we save memory by creating a smaller tree
+         * @param input
+         */
+        void CenterQuadTreeInput(std::vector<std::pair<int64_t, int64_t>> input);
+#endif
+
     private:
         // The root note of our quad tree
         QuadTreeNode* root;

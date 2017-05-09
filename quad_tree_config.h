@@ -10,10 +10,28 @@
  * If this is turned off, we can run just fine unless we have nodes at boundaries, in which the coordinates will wrap
  * in an odd way (we haven't accounted for a bounded space with this off!)
  */
-#define ENABLE_BIG_INT                          1          // enable/disable use of big integers
-#define ENABLE_GARBAGE_COLLECTION               1          // enable/disable garbage collection of nodes
-#define DEBUG_RENDER_SIZE_MAX                   256        // Largest board size we can render to the console
-#define DEBUG_PRINT_NODES_MAX                   1024       // Max number of nodes whose display coordinates we print
+#define ENABLE_BIG_INT                          1   // enable/disable use of big integers
+
+/**
+ * Enable/Disable garbage collection, of which there are currently two modes:
+ * 1) Collect every N generations
+ * 2) Collect once past N number of nodes
+ */
+#define ENABLE_GARBAGE_COLLECTION               1   // disable garbage collection of nodes
+
+/**
+ * This is an optimization to align a quadtree to the center coordinate of all of the initial input
+ * This saves us memory by not generating a complete structure, especially if the initial input is clustered in a region away
+ * From the origin
+ */
+#define ENABLE_QUADTREE_CENTER_ALIGN            1&&ENABLE_BIG_INT // enable/disable aligning the quad tree to the center of input
+
+/**
+ * Debug variables
+ */
+#define DEBUG_RENDER_SIZE_MAX                   256                 // Largest board size we can render to the console
+#define DEBUG_PRINT_NODES_MAX                   1024                // Max number of nodes whose display coordinates we print
+#define DEBUG_PRINT_TO_FILE                     0                   // Print nodes to a text file to debug
 
 /**
  * Two garbage collection modes exist.

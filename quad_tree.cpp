@@ -35,9 +35,14 @@ QuadTree::~QuadTree() {
  * @param num_rows the number of input pairs
  */
 void QuadTree::SetCellsAlive(std::vector<std::pair<int64_t, int64_t>> input) {
+#if (ENABLE_QUADTREE_CENTER_ALIGN)
+     CenterQuadTreeInput(input);
+#else
+     // Set the input list cells alive!
      for (std::pair<int64_t, int64_t> pair : input) {
          SetCellAlive(pair.first, pair.second);
      }
+#endif
 }
 
 /**
@@ -132,13 +137,13 @@ void QuadTree::PrintDisplayCoordinates() {
 
 #if (ENABLE_BIG_INT)
     std::cout << "Generating Display List..\n";
-    // Create our display list, starting from our origin coordinates
+    // Create our display list in full, multiprecision coordinates, starting from our origin
     std::vector<std::pair<mpz_class, mpz_class>> display_list;
     root->BuildDisplayList(origin_x, origin_y, display_list);
 
     // Setup our display coordinate map to store alive cells
     std::unordered_map<std::pair<mpz_class, mpz_class>, bool, MpzClassHash> display_map;
-    bool minMaxSet = false;
+    bool min_max_set = false;
     mpz_class min_x = 0;
     mpz_class min_y = 0;
     mpz_class max_x = 0;
@@ -146,12 +151,12 @@ void QuadTree::PrintDisplayCoordinates() {
 
     // Let's go through our display list, record min and max coordinates, and add to our map for fast access
     for(std::pair<mpz_class, mpz_class> pair : display_list) {
-        if (!minMaxSet) {
+        if (!min_max_set) {
             min_x = pair.first;
             max_x = pair.first;
             min_y = pair.second;
             max_y = pair.second;
-            minMaxSet = true;
+            min_max_set = true;
         } else {
             if (pair.first < min_x) {
                 min_x = pair.first;
@@ -185,7 +190,8 @@ void QuadTree::PrintDisplayCoordinates() {
             std::cout << std::endl;
         }
     } else {
-        /*std::ofstream myfile("test.txt");
+#if (DEBUG_PRINT_TO_FILE)
+        std::ofstream myfile("test.txt");
 
         if (myfile.is_open())
         {
@@ -203,7 +209,8 @@ void QuadTree::PrintDisplayCoordinates() {
                 myfile << std::endl;
             }
             myfile.close();
-        }*/
+        }
+#endif
 
         // Render size would be too large, so lets just display a list of coordinates
         // Let's go through our display list, record min and max coordinates, and add to our map for fast access
@@ -371,3 +378,66 @@ void QuadTree::SetCellAlive(int64_t x, int64_t y) {
     root = root->SetCellAlive(x, y);
 }
 
+#if (ENABLE_QUADTREE_CENTER_ALIGN)
+/**
+ * This is an optimization to calculate an x, y origin that exists in the center of the input cluster
+ * This is an optimization if input is clustered away from the origin, say at our 64 bit signed integer
+ * boundaries or otherwise so that we save memory by creating a smaller tree
+ * @param input
+ */
+void QuadTree::CenterQuadTreeInput(std::vector<std::pair<int64_t, int64_t>> input) {
+    int64_t min_x = INT64_MAX;
+    int64_t max_x = INT64_MIN;
+    int64_t min_y = INT64_MAX;
+    int64_t max_y = INT64_MIN;
+    // Go through once and figure out our min and max coordinates
+    for (std::pair<int64_t, int64_t> pair : input) {
+        if (pair.first < min_x) {
+            min_x = pair.first;
+        } else if (pair.first > max_x) {
+            max_x = pair.first;
+        }
+        if (pair.second < min_y) {
+            min_y = pair.second;
+        } else if (pair.second > max_y) {
+            max_y = pair.second;
+        }
+    }
+
+    // use big integers to calculate the midpoint
+    // apparently this is patented by samsung -> https://www.google.com/patents/US6007232?dq=
+    // "Calculating the average of two integer numbers rounded towards zero in a single instruction cycle "
+    int64_t new_origin_x = (min_x / 2) + (max_x / 2) + (min_x & max_x & 1);
+    int64_t new_origin_y = (min_y / 2) + (max_y / 2) + (min_y & max_y & 1);
+
+    // re-process input to take into account new origin
+    for (std::pair<int64_t, int64_t> pair : input) {
+        pair.first -= new_origin_x;
+        pair.second -= new_origin_y;
+        // Set this cell to be alive
+        // We do it here because this is an iterator, so its stored by value not by pointer
+        SetCellAlive(pair.first, pair.second);
+    }
+
+    // finally, process our origin coordinates to be multiprecision, taking
+    // special care with negative values because of the mpz_import function
+    if (new_origin_x > 0) {
+        mpz_import(origin_x.get_mpz_t(), 1, 1, sizeof(int64_t), 0, 0, &new_origin_x);
+    } else {
+        // if this value is negative, we need to convert it using a positive value
+        // because the mpz_import doesn't take care of negative numbers correctly
+        int64_t pos_origin_x = -new_origin_x;
+        mpz_import(origin_x.get_mpz_t(), 1, 1, sizeof(pos_origin_x), 0, 0, &pos_origin_x);
+        origin_x = -origin_x;
+    }
+    if (new_origin_y > 0) {
+        mpz_import(origin_y.get_mpz_t(), 1, 1, sizeof(int64_t), 0, 0, &new_origin_y);
+    } else {
+        // if this value is negative, we need to convert it using a positive value
+        // because the mpz_import doesn't take care of negative numbers correctly
+        int64_t pos_origin_y = -new_origin_y;
+        mpz_import(origin_y.get_mpz_t(), 1, 1, sizeof(pos_origin_y), 0, 0, &pos_origin_y);
+        origin_y = -origin_y;
+    }
+}
+#endif
