@@ -2,8 +2,8 @@
 // Created by Jenny Spurlock on 5/4/17.
 //
 
-#ifndef GOL_UNIVERSE_H
-#define GOL_UNIVERSE_H
+#ifndef GOL_QUADTREE_H
+#define GOL_QUADTREE_H
 
 
 #include <cstdio>
@@ -41,6 +41,13 @@ class QuadTree {
          * Destructor
          */
         ~QuadTree();
+
+        /**
+         * Initialize this quad tree before it's actually been run
+         * @param input in the form of {x, y}
+         * @param num_rows the number of input pairs
+        */
+        void SetCellsAlive(std::vector<std::pair<int64_t, int64_t>> input);
 
         /**
          * Initialize this quad tree before it's actually been run
@@ -130,7 +137,14 @@ class QuadTree {
         void CollectGarbageHelper(std::unordered_map<QuadTreeNode *, QuadTreeNode *> &nodesInUse, QuadTreeNode *curr);
 #endif
 
+        /**
+         * Print run stats, including memory usage and memory
+         */
         void PrintStats();
+
+        /**
+         * Print a list of display coordinates, or if the alive cells are tightly clustered, a console printout of the board
+         */
         void PrintDisplayCoordinates();
 
     private:
@@ -154,4 +168,4 @@ class QuadTree {
         const int kStartLevels = 3;
 };
 
-#endif //GOL_UNIVERSE_H
+#endif //GOL_QUADTREE_H

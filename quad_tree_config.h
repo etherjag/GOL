@@ -12,21 +12,25 @@
  */
 #define ENABLE_BIG_INT                          1          // enable/disable use of big integers
 #define ENABLE_GARBAGE_COLLECTION               1          // enable/disable garbage collection of nodes
-#define DEBUG_RENDER_SIZE_MAX                   128        // Largest board size we can render to the console
+#define DEBUG_RENDER_SIZE_MAX                   256        // Largest board size we can render to the console
 
 /**
  * Two garbage collection modes exist.
  * 1) Generations: Clean up nodes every x generations
- *  - A higher value could mean an exponentially higher number of nodes per generation
- *      but I wanted to experiment with this method
+ *  - A higher value could mean an exponentially higher number of nodes per generation, but this method works better
+ *      for a large board with lots of nodes
  * 2) Nodes: Clean up nodes once we pass a specific threshold
  *  - A higher value is faster if we are just running a simulation, although it will use more max memory.
  *      This will cause a render hitch due to the high volume if we are actually rendering.
  *  - A lower value is better if we are rendering and stepping every frame, because it won't cause a hitch
+ *  - Possible problems: If we have a huge board, this will run every frame because of the node count
  */
-#define GARBAGE_COLLECTION_MODE_GENERATIONS     (0&&ENABLE_GARBAGE_COLLECTION)         // collect garbage every N generations
-#define GARBAGE_COLLECTION_MODE_NODES           (1&&ENABLE_GARBAGE_COLLECTION)         // collect garbage once we pass N nodes
+#define GARBAGE_COLLECTION_MODE_GENERATIONS     (1&&ENABLE_GARBAGE_COLLECTION)         // collect garbage every N generations
+#define GARBAGE_COLLECTION_MODE_NODES           (0&&ENABLE_GARBAGE_COLLECTION)         // collect garbage once we pass N nodes
 
+/**
+ * Params for garbage collection modes
+ */
 #if (GARBAGE_COLLECTION_MODE_GENERATIONS)
 #define GARBAGE_COLLECTION_GENERATIONS_COUNT    5000      // number of generations to collect garbage
 #elif (GARBAGE_COLLECTION_MODE_NODES)

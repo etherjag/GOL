@@ -3,6 +3,7 @@
 //
 
 #include <vector>
+#include <fstream>
 #include "quad_tree.h"
 
 /**
@@ -26,6 +27,17 @@ QuadTree::QuadTree() {
 QuadTree::~QuadTree() {
     // Shutdown the quad tree nodes, freeing all node memory
     QuadTreeNode::Shutdown();
+}
+
+/**
+ * Initialize this quad tree before it's actually been run
+ * @param input in the form of {x, y}
+ * @param num_rows the number of input pairs
+ */
+void QuadTree::SetCellsAlive(std::vector<std::pair<int64_t, int64_t>> input) {
+     for (std::pair<int64_t, int64_t> pair : input) {
+         SetCellAlive(pair.first, pair.second);
+     }
 }
 
 /**
@@ -84,18 +96,26 @@ void QuadTree::Step() {
     CollectGarbage();
 }
 
+/**
+ * Print run stats, including memory usage and memory
+ */
 void QuadTree::PrintStats() {
     size_t total_mem = (sizeof(QuadTreeNode) * QuadTreeNode::node_map.size())/1024;  // convert to kilobytes
     std::cout << "============================================================\n";
-    std::cout << "== Generation (" << num_generations << ") Population (" << root->population << ")" << " Tree Level (" << root->level << ")" << std::endl;
+    std::cout << "Generation (" << num_generations << ") Population (" << root->population << ")" << " Tree Level (" << root->level << ")" << std::endl;
     std::cout << "============================================================\n";
-    std::cout << "# Nodes: all time (" << QuadTreeNode::num_nodes_created << ") current(" << QuadTreeNode::node_map.size() << ")\nHeap memory usage: " << total_mem << " KB" << std::endl;
+    std::cout << "Current # nodes: " << QuadTreeNode::node_map.size() << std::endl;
+    std::cout << "Current Heap memory usage: " << total_mem << " KB" << std::endl;
+    std::cout << "All Time # nodes: " << QuadTreeNode::num_nodes_created << std::endl;
     std::cout << "NW Population: " << root->nw->population << std::endl;
     std::cout << "NE Population: " << root->ne->population << std::endl;
     std::cout << "SW Population: " << root->sw->population << std::endl;
     std::cout << "SE Population: " << root->se->population << std::endl;
 }
 
+/**
+ * Print a list of display coordinates, or if the alive cells are tightly clustered, a console printout of the board
+ */
 void QuadTree::PrintDisplayCoordinates() {
 
 #if (ENABLE_BIG_INT)
@@ -110,6 +130,7 @@ void QuadTree::PrintDisplayCoordinates() {
     mpz_class min_y = 0;
     mpz_class max_x = 0;
     mpz_class max_y = 0;
+
     // Let's go through our display list, record min and max coordinates, and add to our map for fast access
     for(std::pair<mpz_class, mpz_class> pair : display_list) {
         if (!minMaxSet) {
@@ -134,7 +155,7 @@ void QuadTree::PrintDisplayCoordinates() {
     }
     // Print out a small render of the board, or if its too large, print out display coordinates so we can verify
     std::cout << "============================================================\n";
-    std::cout << "== Drawing Boundaries min(" << min_x << ", " << min_y  << ") max(" << max_x << ", " << max_y << ")" << std::endl;
+    std::cout << "Drawing Boundaries min(" << min_x << ", " << min_y  << ") max(" << max_x << ", " << max_y << ")" << std::endl;
     std::cout << "============================================================\n";
     int display_list_index = 0;
     // Are we small enough to render out to the console?
@@ -153,6 +174,26 @@ void QuadTree::PrintDisplayCoordinates() {
             std::cout << std::endl;
         }
     } else {
+        /*std::ofstream myfile("test.txt");
+
+        if (myfile.is_open())
+        {
+            for (mpz_class y = min_y; y <= max_y; ++y) {
+                mpz_class x;
+                for (x = min_x; x <= max_x; ++x) {
+                    if (display_map[std::make_pair(x, y)]) {
+                        myfile << "*";
+                        ++display_list_index;
+                    } else {
+
+                        myfile << "_";
+                    }
+                }
+                myfile << std::endl;
+            }
+            myfile.close();
+        }*/
+
         // Render size would be too large, so lets just display a list of coordinates
         // Let's go through our display list, record min and max coordinates, and add to our map for fast access
         for(std::pair<mpz_class, mpz_class> pair : display_list) {
@@ -161,47 +202,60 @@ void QuadTree::PrintDisplayCoordinates() {
         std::cout << std::endl;
     }
 #else
-    std::vector<std::pair<int64_t, int64_t>> displayList;
-    root->BuildDisplayList(INT64_C(0), INT64_C(0), displayList);
-    int64_t minX = INT64_MAX;
-    int64_t minY = INT64_MAX;
-    int64_t maxX = INT64_MIN;
-    int64_t maxY = INT64_MIN;
-    std::unordered_map<std::pair<int64_t, int64_t>, bool, PairHash> displayMap;
-    for(std::pair<int64_t, int64_t> pair : displayList) {
-        if (pair.first < minX) {
-            minX = pair.first;
-        } else if (pair.first > maxX) {
-            maxX = pair.first;
-        }
-        if (pair.second < minY) {
-            minY = pair.second;
-        } else if (pair.second > maxY) {
-            maxY = pair.second;
-        }
-        displayMap[pair] = true;
-    }
-    int displayListIndex = 0;
-    std::cout << "============================================================\n";
-    std::cout << "== Drawing min(" << minX << ", " << minY  << ") max(" << maxX << ", " << maxY << ")" << std::endl;
-    for (int64_t y = minY; y <= maxY; ++y) {
-        int64_t x;
-        for (x = minX; x <= maxX; ++x) {
-            if (displayMap[std::make_pair(x, y)]) {
-                std::cout << "*";
-                ++displayListIndex;
-            } else {
+    // Create our display list, starting from our origin coordinates
+    std::vector<std::pair<int64_t, int64_t>> display_list;
+    root->BuildDisplayList(INT64_C(0), INT64_C(0), display_list);
+    std::unordered_map<std::pair<int64_t, int64_t>, bool, PairHash> display_map;
 
-                std::cout << "_";
-            }
+    // Setup our display coordinate map to store alive cells
+    int64_t min_x = INT64_MAX;
+    int64_t min_y = INT64_MAX;
+    int64_t max_x = INT64_MIN;
+    int64_t max_y = INT64_MIN;
+
+    // Let's go through our display list, record min and max coordinates, and add to our map for fast access
+    for(std::pair<int64_t, int64_t> pair : display_list) {
+        if (pair.first < min_x) {
+            min_x = pair.first;
+        } else if (pair.first > max_x) {
+            max_x = pair.first;
         }
-        if (y == INT64_MAX || x == INT64_MAX) {
-            break;
+        if (pair.second < min_y) {
+            min_y = pair.second;
+        } else if (pair.second > max_y) {
+            max_y = pair.second;
+        }
+        display_map[pair] = true;
+    }
+    int display_list_index = 0;
+    std::cout << "============================================================\n";
+    std::cout << "== Drawing min(" << min_x << ", " << min_y  << ") max(" << max_x << ", " << max_y << ")" << std::endl;
+    // Are we small enough to render out to the console?
+    if ((max_x - min_x < DEBUG_RENDER_SIZE_MAX) && (max_y - min_y < DEBUG_RENDER_SIZE_MAX)) {
+        for (int64_t y = min_y; y <= max_y; ++y) {
+            int64_t x;
+            for (x = min_x; x <= max_x; ++x) {
+                if (display_map[std::make_pair(x, y)]) {
+                    std::cout << "*";
+                    ++display_list_index;
+                } else {
+
+                    std::cout << "_";
+                }
+            }
+            std::cout << std::endl;
+        }
+    } else {
+        // Render size would be too large, so lets just display a list of coordinates
+        // Let's go through our display list, record min and max coordinates, and add to our map for fast access
+        for(std::pair<int64_t, int64_t> pair : display_list) {
+            std::cout << "(" << pair.first << ", " << pair.second << ") ";
         }
         std::cout << std::endl;
     }
 #endif
 }
+
 /**
  * Print some debug information, and if the board is small enough we print
  * it out to the console with empty cells as "_", and alive cells as "*"
