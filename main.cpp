@@ -39,8 +39,8 @@ int main(int argc, char* argv[]) {
     // Todo: Remember to change the "../patterns" directory if running debug from a non one level sub-directory
 
     // Glider: lets put it at our signed 64 bit boundary and see what happens!
-    QuadTreeTests::RunRLEPatternTest("../patterns/glider.rle", 100000, INT64_MAX, INT64_MAX, true);
-    return 0;
+    QuadTreeTests::RunRLEPatternTest("../patterns/glider.rle", 1000, INT64_MAX, INT64_MAX, true);
+
 
     // Weekender set to the INT64 MIN boundary on Y (it moves upwards)
     QuadTreeTests::RunRLEPatternTest("../patterns/weekender.rle", 1000, 0, INT64_MIN, true);
@@ -57,8 +57,8 @@ int main(int argc, char* argv[]) {
     // Loaf - still life
     QuadTreeTests::RunRLEPatternTest("../patterns/loaf.rle", 100, INT64_MAX, INT64_MAX, true);
 
-    // Queen Bee
-    QuadTreeTests::RunRLEPatternTest("../patterns/queenbee.rle", 21, INT64_MIN, INT64_MIN, true);
+    // Queen Bee at the origin
+    QuadTreeTests::RunRLEPatternTest("../patterns/queenbee.rle", 21, 0, 0, true);
 
     // Queen Bee Stable - This pattern becomes stable at 191
     QuadTreeTests::RunRLEPatternTest("../patterns/queenbee.rle", 191, INT64_MIN, INT64_MIN, true);

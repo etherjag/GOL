@@ -89,7 +89,16 @@ void QuadTree::Step() {
             || root->se->population != root->se->nw->nw->population
 #endif
     ) {
+#if (!ENABLE_INFINITE_LEVELS)
+        QuadTreeNode* new_root = root->Expand();
+        if (new_root == root) {
+            std::cout << "Unable to evolve tree, maximum level count has been reached." << std::endl;
+            return;
+        }
+        root = new_root;
+#else
         root = root->Expand();
+#endif;
     }
     // evolve a generation forward
     root = root->Evolve();

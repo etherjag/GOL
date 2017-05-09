@@ -98,6 +98,13 @@ bool QuadTreeNode::operator==(const QuadTreeNode &other) const {
  * @return a new node one level higher
  */
 QuadTreeNode* QuadTreeNode::Expand() {
+    // have we hit a level size boundary limit?
+#if (!ENABLE_INFINITE_LEVELS)
+    if (level + 1 < level) {
+        std::cout << "Maximum level size has reached a 32 bit integer limit, unable to expand tree." << std::endl;
+        return this;
+    }
+#endif
     // We're expanding by a factor of 2, so let's create a level above so that we have empty regions to calculate the life rule
     QuadTreeNode* emptyRegion = EmptyQuadTree(level - 1);
     QuadTreeNode* newNW = Canonical(emptyRegion, emptyRegion, emptyRegion, this->nw, level);
