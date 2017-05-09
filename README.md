@@ -235,8 +235,8 @@ DONE: Processed test in 44347 milliseconds
 * KD tree? R tree? could any of these perform better?
 * A wildly different alternative...??
 
-Things I did not get around to:
-* Drawing!!!
+### Things I did not get around to:
+* Drawing!!! The best part!!!
 
 ## Code Style
 
